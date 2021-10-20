@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cellular Automata</title>
+</head>
+<body>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  width: 100%;
+}
+main {
+  width: 100%;
+  display: grid;
+  padding: 10px;
+  gap: 10px;
+  grid-template-columns: 5fr 1fr;
+}
+canvas {
+  display: block;
+  border: 1px solid #ccc;
+}
+.rules {
+}
+.rule {
+  font-family: monospace;
+  font-size: 1rem;
+}
+.rule label {
+  display: block;
+}
+.rule input {
+  width: 100%;
+}
+.rule + .rule {
+  margin-top: 10px;
+}
+</style>
+<main>
+<div class="canvas">
+  <canvas></canvas>
+</div>
+<div class="rules">
+  <div class="rule">
+    <label for="rule">Rule (0)</label>
+    <input id="rule" name="rule" type="number" value="0" min="0" max="256" step="1" />
+  </div>
+  <div class="rule">
+    <label for="res">Res (20)</label>
+    <input id="res" name="res" type="range" value="20" min="1" max="1000" step="1" />
+  </div>
+</div>
+</main>
+<script>
+const canvas = document.querySelector('canvas')
+const ctx = canvas.getContext('2d')
+let w, h
+const sizeUp = () => {
+  w = document.querySelector('.canvas').getBoundingClientRect().width
+  h = window.innerHeight - 20
+  canvas.style.width = w + 'px'
+  canvas.style.height = h + 'px'
+  const scale = window.devicePixelRatio
+  canvas.width = w * scale | 0
+  canvas.height = h * scale | 0
+  ctx.scale(scale, scale)
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, w, h)
+}
+
+sizeUp()
+window.addEventListener('resize', () => {
+  sizeUp()
+  run()
+})
+
+const ruleInput = document.querySelector('#rule')
+const ruleLabel = document.querySelector('[for="rule"]')
+const resInput = document.querySelector('#res')
+const resLabel = document.querySelector('[for="res"]')
+let cells = []
+let cW = 1
+let cH = 1
+let rule = 0
+
+const gen = () => {
+  const newRes = Number(resInput.value)
+  const newRule = Number(ruleInput.value)
+  resLabel.innerText = `Res (${newRes})`
+  ruleLabel.innerText = `Rule (${newRule})`
+  cells = new Array(newRes).fill(0)
+  cW = w / cells.length
+  cH = cW
+  cells[cells.length / 2 | 0] = 1
+  rule = newRule
+}
+
+const colors = ['white', 'black']
+
+const drawIteration = (cells, j) => {
+  for (let i = 0; i < cells.length; ++i) {
+    ctx.fillStyle = colors[cells[i]]
+    ctx.fillRect(i*cW, j*cH, cW, cH)
+  }
+}
+
+const mutate = cells => {
+  const mutated = cells.slice()
+  for (let i = 0; i < cells.length; ++i) {
+    const n = ((cells[i-1] || 0) << 2) | ((cells[i] || 0) << 1) | ((cells[i+1] || 0) << 0)
+    mutated[i] = (rule >> n) & 1
+  }
+  return mutated
+}
+
+const run = () => {
+  gen()
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, w, h)
+  for (let j = 0; j < h / cH | 0; ++j) {
+    drawIteration(cells, j)
+    cells = mutate(cells)
+  }
+}
+
+Array.from(document.querySelectorAll('input')).forEach(input => {
+  input.addEventListener('input', run)
+})
+
+run()
+
+</script>
+</body>
+</html>
